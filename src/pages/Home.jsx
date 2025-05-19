@@ -11,7 +11,7 @@ import { getUsers } from '../services/UserService';
 
 function Home() {
   const [activeProject, setActiveProject] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
