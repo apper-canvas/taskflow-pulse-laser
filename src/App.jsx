@@ -22,6 +22,7 @@ function App() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initializationError, setInitializationError] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem('darkMode') === 'true' || 
     window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -43,18 +44,40 @@ function App() {
   
   // Initialize ApperUI once when the app loads
   useEffect(() => {
+    let initTimeoutId;
+    
+    try {
+      const { ApperClient, ApperUI } = window.ApperSDK;
+      const client = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      // Set a timeout to prevent infinite loading
+      initTimeoutId = setTimeout(() => {
+        console.log("Initialization timeout reached, proceeding with application");
+        setIsInitialized(true);
+      }, 5000); // 5 seconds timeout
+      
+    } catch (error) {
+      setInitializationError("Failed to initialize ApperSDK: " + error.message);
+      setIsInitialized(true); // Continue to render the app even with error
+      return;
+    }
+
+    // Initialize ApperUI but don't show login yet
     const { ApperClient, ApperUI } = window.ApperSDK;
     const client = new ApperClient({
       apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
       apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
     });
-
-    // Initialize but don't show login yet
+    
     ApperUI.setup(client, {
       target: '#authentication',
       clientId: import.meta.env.VITE_APPER_PROJECT_ID,
       view: 'both',
       onSuccess: function (user) {
+        clearTimeout(initTimeoutId); // Clear the timeout
         setIsInitialized(true);
         // CRITICAL: This exact currentPath logic must be preserved in all implementations
         // DO NOT simplify or modify this pattern as it ensures proper redirection flow
@@ -107,10 +130,19 @@ function App() {
         }
       },
       onError: function(error) {
+        clearTimeout(initTimeoutId); // Clear the timeout
         console.error("Authentication failed:", error);
+        setInitializationError("Authentication failed: " + error.message);
         setIsInitialized(true);
       }
     });
+    
+    // Clean up the timeout if component unmounts
+    return () => {
+      if (initTimeoutId) {
+        clearTimeout(initTimeoutId);
+      }
+    };
   }, [dispatch, navigate]);
 
   const toggleDarkMode = () => {
@@ -138,8 +170,14 @@ function App() {
 
   // Don't render routes until initialization is complete
   if (!isInitialized) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="text-lg">Initializing application...</div>
+    return <div className="flex items-center justify-center min-h-screen bg-surface-50 dark:bg-surface-900">
+      <div className="text-lg text-surface-800 dark:text-surface-200">
+        Initializing application...
+        <div className="mt-4">
+          <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto">
+          </div>
+        </div>
+      </div>
     </div>;
   }
 
@@ -148,6 +186,63 @@ function App() {
       <div className="flex min-h-screen bg-surface-50 dark:bg-surface-900 transition-colors duration-300">
         {/* Dark Mode Toggle Button */}
         <motion.button
+          onClick={toggleDarkMode}
+          className="fixed bottom-4 right-4 z-50 p-3 rounded-full bg-surface-200 dark:bg-surface-700 shadow-md hover:shadow-lg transition-all"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {isDarkMode ? <SunIcon className="h-5 w-5 text-yellow-400" /> : <MoonIcon className="h-5 w-5 text-surface-600" />}
+        </motion.button>
+
+        {/* Display initialization error if any */}
+        {initializationError && (
+          <div className="fixed top-4 right-4 z-50 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-lg shadow-md">
+            <p className="font-medium">Error</p>
+            <p className="text-sm">{initializationError}</p>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          <main className="flex-1">
+            <Routes>
+              {/* Auth Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/callback" element={<Callback />} />
+              <Route path="/error" element={<ErrorPage />} />
+              
+              {/* Protected Routes - only accessible when authenticated */}
+              <Route path="/" element={isAuthenticated ? <Home /> : <Login />} />
+              <Route path="/reports" element={isAuthenticated ? <Reports /> : <Login />} />
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+        </div>
+
+        {/* Toast Container Configuration */}
+        <ToastContainer
+          position="bottom-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={isDarkMode ? "dark" : "light"}
+          toastClassName="shadow-md"
+        />
+      </div>
+    </AuthContext.Provider>
+  );
+}
+
+export default App;
+
           onClick={toggleDarkMode}
           className="fixed bottom-4 right-4 z-50 p-3 rounded-full bg-surface-200 dark:bg-surface-700 shadow-md hover:shadow-lg transition-all"
           whileHover={{ scale: 1.1 }}
