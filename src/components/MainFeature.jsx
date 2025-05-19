@@ -2,21 +2,22 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getIcon } from '../utils/iconUtils';
 import TimeTracker from './TimeTracker';
-import TimeTracker from './TimeTracker';
 
+const MainFeature = () => {
   const defaultFormData = {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formData, setFormData] = useState({
     title: '',
     description: '',
     status: 'not-started',
     priority: 'medium',
     dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
     timeSpent: 0,
-  };
-  
-  const [formData, setFormData] = useState(defaultFormData);
     timerRunning: false
+  };
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formData, setFormData] = useState(defaultFormData);
+  const [validationErrors, setValidationErrors] = useState({
+    title: ''
   });
   const [validationErrors, setValidationErrors] = useState({});
   const [showTimeTracker, setShowTimeTracker] = useState(false);
@@ -77,15 +78,15 @@ import TimeTracker from './TimeTracker';
     
     if (validateForm()) {
       // Include the current time tracking data in the task
-      onAddTask({...formData});
+      console.log("Task created:", formData); // Replace with actual task creation logic
     
-    // Reset form data
-    setFormData(defaultFormData);
+      // Reset form data
+      setFormData(defaultFormData);
     
-    // Reset errors
-    setErrors({
-      title: ''
-    });
+      // Reset errors
+      setValidationErrors({
+        title: ''
+      });
       setIsFormOpen(false);
   };
   }
@@ -138,13 +139,6 @@ import TimeTracker from './TimeTracker';
                     type="text"
                     id="title"
                     name="title"
-          {/* Time tracking */}
-          <div className="mt-4">
-            <TimeTracker 
-              onTimeUpdate={handleTimeUpdate}
-              initialTime={formData.timeSpent}
-            />
-          </div>
                     value={formData.title}
                     onChange={handleInputChange}
                     placeholder="What needs to be done?"
@@ -170,6 +164,8 @@ import TimeTracker from './TimeTracker';
                     placeholder="Add details about this task..."
                     rows="3"
                     className="w-full"
+                    value={formData.description}
+                    onChange={handleInputChange}
                   ></textarea>
                 </div>
                 
