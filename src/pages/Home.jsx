@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import MainFeature from '../components/MainFeature';
 
-function Home({ tasks, setTasks, projects, users }) {
+function Home({ tasks, setTasks, projects, setProjects, users }) {
   const [activeProject, setActiveProject] = useState('p1');
   const [isLoading, setIsLoading] = useState(false);
   useEffect(() => {
@@ -95,8 +94,8 @@ function Home({ tasks, setTasks, projects, users }) {
         </motion.div>
       </div>
     );
-              <Link to="/reports" className="block p-4 bg-white dark:bg-surface-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-  
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-6">
@@ -104,7 +103,6 @@ function Home({ tasks, setTasks, projects, users }) {
         <div className="w-full md:w-64 lg:w-72">
           <div className="card mb-4">
             <h2 className="text-xl font-bold mb-4 flex items-center">
-              </Link>
               Projects
             </h2>
             
@@ -147,6 +145,13 @@ function Home({ tasks, setTasks, projects, users }) {
           {/* Navigation Links */}
           <div className="card mb-4">
             <h3 className="text-lg font-bold mb-3">Navigation</h3>
+            {/* Reports Quick Access */}
+            <div className="mb-3">
+              <Link to="/reports" className="block p-4 bg-white dark:bg-surface-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                <span className="flex items-center"><BarChart2Icon className="w-4 h-4 mr-2" /> Reports Dashboard</span>
+              </Link>
+            </div>
+            
             <ul className="space-y-2">
               <li className="hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg">
                 <a href="/" className="block px-3 py-2 text-surface-800 dark:text-surface-200">Dashboard</a>
