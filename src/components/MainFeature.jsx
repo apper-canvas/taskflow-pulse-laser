@@ -87,6 +87,7 @@ function MainFeature({ onAddTask, projectId }) {
       setShowTimeTracker(false);
       setIsFormOpen(false);
   };
+  }
 
   const handleTimeUpdate = (newTime) => {
     setFormData({...formData, timeSpent: newTime});
