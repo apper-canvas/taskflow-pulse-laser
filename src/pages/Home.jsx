@@ -6,12 +6,13 @@ import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import MainFeature from '../components/MainFeature';
 import { getTasks, updateTask, deleteTask } from '../services/TaskService';
-import { getProjects, updateProject } from '../services/ProjectService';
+import { getProjects, updateProject, createProject } from '../services/ProjectService';
 import { getUsers } from '../services/UserService';
 
 function Home() {
   const [activeProject, setActiveProject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
@@ -142,6 +143,159 @@ function Home() {
       }
     }
   };
+  
+  // Project Form Modal Component
+  const ProjectFormModal = () => {
+    const [projectData, setProjectData] = useState({
+      name: '',
+      color: '#4f46e5' // Default color - primary
+    });
+    const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const ModalXIcon = getIcon('x');
+    const RefreshCwIcon = getIcon('refresh-cw');
+    
+    const handleInputChange = (e) => {
+      const { name, value } = e.target;
+      setProjectData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+      // Clear error for this field when user types
+      if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: '' }));
+      }
+    };
+    
+    const validateForm = () => {
+      const newErrors = {};
+      if (!projectData.name.trim()) {
+        newErrors.name = 'Project name is required';
+      } else if (projectData.name.length < 3) {
+        newErrors.name = 'Project name must be at least 3 characters';
+      }
+      
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    };
+    
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      
+      if (validateForm()) {
+        setIsSubmitting(true);
+        try {
+          const newProject = await createProject({
+            name: projectData.name,
+            color: projectData.color
+          });
+          
+          // Refresh projects list
+          const projectsData = await getProjects();
+          setProjects(projectsData);
+          
+          // Set the new project as active
+          setActiveProject(newProject.Id);
+          
+          toast.success('Project created successfully!');
+          setIsProjectModalOpen(false);
+        } catch (error) {
+          console.error('Error creating project:', error);
+          toast.error('Failed to create project');
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
+    };
+    
+    const colorOptions = [
+      '#4f46e5', // Indigo (primary)
+      '#10b981', // Emerald (secondary)
+      '#f97316', // Orange (accent)
+      '#ef4444', // Red
+      '#f59e0b', // Amber
+      '#3b82f6', // Blue
+      '#8b5cf6', // Violet
+      '#ec4899', // Pink
+      '#6366f1'  // Indigo alternative
+    ];
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white dark:bg-surface-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Create New Project</h3>
+            <button 
+              className="p-1 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700"
+              onClick={() => setIsProjectModalOpen(false)}
+            >
+              <ModalXIcon className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="input-group">
+              <label htmlFor="project-name" className="input-label">
+                Project Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="project-name"
+                name="name"
+                value={projectData.name}
+                onChange={handleInputChange}
+                placeholder="Enter project name"
+                className={`w-full ${errors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+              )}
+            </div>
+            
+            <div className="input-group mt-4">
+              <label className="input-label">Project Color</label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {colorOptions.map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`w-8 h-8 rounded-full ${projectData.color === color ? 'ring-2 ring-offset-2 ring-surface-400 dark:ring-surface-500' : ''}`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => handleInputChange({ target: { name: 'color', value: color } })}
+                  ></button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setIsProjectModalOpen(false)}
+                className="btn-outline"
+              >
+                Cancel
+              </button>
+              
+              <button
+                type="submit"
+                className={`btn-primary flex items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <RefreshCwIcon className="w-4 h-4 animate-spin" /> Creating...
+                  </span>
+                ) : (
+                  'Create Project'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
 
   // Get current project's tasks
   const filteredTasks = tasks.filter(task => task.project_id === activeProject);
@@ -171,6 +325,9 @@ function Home() {
       </div>
     );
   }
+  
+  // Show project modal if it's open
+  const projectModal = isProjectModalOpen ? <ProjectFormModal /> : null;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -212,9 +369,14 @@ function Home() {
               ))}
             </ul>
             
-            <button className="w-full mt-3 btn-outline flex items-center justify-center gap-1">
+            <button 
+              className="w-full mt-3 btn-outline flex items-center justify-center gap-1"
+              onClick={() => setIsProjectModalOpen(true)}
+            >
               <PlusCircleIcon className="w-4 h-4" />
               <span>New Project</span>
+            </button>
+            
             </button>
           </div>
 
@@ -442,6 +604,9 @@ function Home() {
             )}
           </div>
         </div>
+      
+      {/* Project creation modal */}
+      {projectModal}
       </div>
     </div>
   );
