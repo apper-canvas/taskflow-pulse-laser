@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getIcon } from '../utils/iconUtils';
+import { useContext } from 'react';
+import { AuthContext } from '../App';
 
-function NotFound() {
+const NotFound = () => {
   const AlertTriangleIcon = getIcon('alert-triangle');
-  const HomeIcon = getIcon('home');
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -32,24 +33,9 @@ function NotFound() {
         
         <h1 className="text-4xl md:text-5xl font-bold mb-4">404</h1>
         <h2 className="text-2xl md:text-3xl font-semibold mb-2">Page Not Found</h2>
-        <p className="text-surface-600 dark:text-surface-400 mb-8">
-          Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.
-        </p>
-        
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Link 
-            to="/"
-            className="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-lg"
-          >
-            <HomeIcon className="w-5 h-5" />
-            Back to Home
-          </Link>
-        </motion.div>
-      </motion.div>
-    </div>
+        <div className="mt-6">
+          <Link to="/login" className="text-primary hover:underline">Go to login page</Link>
+        </div>
   );
 }
 

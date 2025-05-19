@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
+import { startTimeTracking, stopTimeTracking } from '../services/TimeTrackerService';
 
 function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
   const [time, setTime] = useState(initialTime);
   const [timerRunning, setTimerRunning] = useState(isRunning);
+  const [isLoading, setIsLoading] = useState(false);
+  const [trackerId, setTrackerId] = useState(null);
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
 
@@ -21,22 +25,60 @@ function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
         const elapsedTime = Date.now() - startTimeRef.current;
         setTime(elapsedTime);
         onTimeUpdate && onTimeUpdate(elapsedTime);
-      }, 1000);
-    } else {
+  const toggleTimer = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (isRunning) {
+        // Stop the timer in the UI
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+        
+        // If we have a trackerId, stop the tracking in the database
+        if (trackerId) {
+          await stopTimeTracking(trackerId);
+          setTrackerId(null);
+        }
+        
+        toast.info("Timer stopped");
+      } else {
+        // Start the timer in the UI
+        timerRef.current = setInterval(() => {
+          setTime(prevTime => {
+            const newTime = prevTime + 1;
+            if (onTimeUpdate) onTimeUpdate(newTime);
+            return newTime;
+          });
+        }, 1000);
+        
+        // Start tracking in the database if taskId is provided
+        if (taskId) {
+          const response = await startTimeTracking({
+            taskId: taskId,
+            taskName: taskName || 'Task'
+          });
+          
+          if (response && response.Id) {
+            setTrackerId(response.Id);
+          }
+        }
+        
+        toast.info("Timer started");
+      }
+      
+      // Toggle the running state
+      setIsRunning(!isRunning);
+    } catch (error) {
+      console.error("Error toggling timer:", error);
+      toast.error("Failed to update timer");
+      
+      // Reset timer state if there was an error
       clearInterval(timerRef.current);
-    }
-
-    return () => {
-      clearInterval(timerRef.current);
-    };
-  }, [timerRunning, onTimeUpdate]);
-
-  // Format time in HH:MM:SS
-  const formatTime = (milliseconds) => {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
+      timerRef.current = null;
+      setIsRunning(false);
+    } finally {
+      setIsLoading(false);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
 
     return [
       hours.toString().padStart(2, '0'),
@@ -81,13 +123,14 @@ function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
             }`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            type="button"
+          whileHover={{ scale: isLoading ? 1.0 : 1.05 }}
           >
+          disabled={isLoading}
             {timerRunning ? (
-              <>
-                <PauseIcon className="w-4 h-4" />
+          {isLoading ? (
+            <><RefreshCwIcon className="w-4 h-4 animate-spin" /> Loading...</>
                 <span>Pause</span>
-              </>
+            isRunning ? <><PauseIcon className="w-4 h-4" /> Stop</> : <><PlayIcon className="w-4 h-4" /> Start</>
             ) : (
               <>
                 <PlayIcon className="w-4 h-4" />

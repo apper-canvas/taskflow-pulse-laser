@@ -1,74 +1,150 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import MainFeature from '../components/MainFeature';
+import { getTasks, updateTask, deleteTask } from '../services/TaskService';
+import { getProjects, updateProject } from '../services/ProjectService';
+import { getUsers } from '../services/UserService';
 
-function Home({ tasks, setTasks, projects, setProjects, users }) {
-  const [activeProject, setActiveProject] = useState('p1');
-  const [isLoading, setIsLoading] = useState(false);
+function Home() {
+  const [activeProject, setActiveProject] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [users, setUsers] = useState([]);
+  const userState = useSelector((state) => state.user);
+
+  // Load initial data
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-    
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        // Fetch projects first
+        const projectsData = await getProjects();
+        setProjects(projectsData);
+        
+        // Set the first project as active if available
+        if (projectsData.length > 0) {
+          setActiveProject(projectsData[0].Id);
+        }
+        
+        const usersData = await getUsers();
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Error fetching initial data:", error);
+        toast.error("Failed to load projects and users");
+      }
+    };
+
+    fetchData();
   }, []);
 
-  // Function to handle adding a new task
-  const handleAddTask = (task) => {
-    const newTask = {
-      id: `t${Date.now()}`,
-      ...task,
-      projectId: activeProject,
-      assignedTo: 'u1', // Default assignment
-      timeSpent: 0
+  // Load tasks whenever the active project changes
+  useEffect(() => {
+    const loadTasks = async () => {
+      if (!activeProject) return;
+      
+      setIsLoading(true);
+      try {
+        const tasksData = await getTasks({ project: activeProject });
+        setTasks(tasksData);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        toast.error("Failed to load tasks");
+      } finally {
+        setIsLoading(false);
+      }
     };
     
-    setTasks([...tasks, newTask]);
-    
-    // Update project task count
-    setProjects(projects.map(project => 
-      project.id === activeProject 
-        ? { ...project, taskCount: project.taskCount + 1 } 
-        : project
-    ));
-    
-    toast.success("Task created successfully!");
-  };
+    loadTasks();
+  }, [activeProject]);
 
-  // Function to handle updating task status
-  const handleUpdateTaskStatus = (taskId, newStatus) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, status: newStatus } 
-        : task
-    ));
+  // Function to handle adding a new task is implemented in MainFeature.jsx
+  // We'll pass a callback to refresh the task list
+  const refreshTasks = async () => {
+    if (!activeProject) return;
     
-    toast.info("Task status updated!");
-  };
-
-  // Function to handle deleting a task
-  const handleDeleteTask = (taskId) => {
-    const taskToDelete = tasks.find(task => task.id === taskId);
-    
-    if (taskToDelete) {
-      setTasks(tasks.filter(task => task.id !== taskId));
+    try {
+      const tasksData = await getTasks({ project: activeProject });
+      setTasks(tasksData);
       
-      // Update project task count
-      setProjects(projects.map(project => 
-        project.id === taskToDelete.projectId 
-          ? { ...project, taskCount: project.taskCount - 1 } 
-          : project
+      // Also refresh the project to get updated task count
+      const projectsData = await getProjects();
+      setProjects(projectsData);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    }
+  };
+  
+  // Function to handle updating task status
+  const handleUpdateTaskStatus = async (taskId, newStatus) => {
+    try {
+      // First get the task to update
+      const taskToUpdate = tasks.find(task => task.Id === taskId);
+      if (!taskToUpdate) return;
+      
+      // Update with new status
+      await updateTask(taskId, {
+        ...taskToUpdate,
+        status: newStatus
+      });
+      
+      // Update local state
+      setTasks(tasks.map(task => 
+        task.Id === taskId 
+          ? { ...task, status: newStatus } 
+          : task
       ));
       
-      toast.success("Task deleted successfully!");
+      toast.info("Task status updated!");
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      toast.error("Failed to update task status");
+    }
+  };
+  
+  // Function to handle deleting a task
+  const handleDeleteTask = (taskId) => {
+    const taskToDelete = tasks.find(task => task.Id === taskId);
+    
+    if (taskToDelete) {
+      // Confirm before deleting
+      if (confirm('Are you sure you want to delete this task?')) {
+        deleteTask(taskId)
+          .then(() => {
+            // Remove from local state
+            setTasks(tasks.filter(task => task.Id !== taskId));
+            
+            // Update project task count
+            const project = projects.find(p => p.Id === taskToDelete.project_id);
+            if (project) {
+              updateProject(project.Id, {
+                ...project,
+                taskCount: Math.max(0, project.taskCount - 1)
+              });
+              
+              // Update projects in state
+              setProjects(projects.map(p => 
+                p.Id === taskToDelete.project_id
+                  ? { ...p, taskCount: Math.max(0, p.taskCount - 1) }
+                  : p
+              ));
+            }
+            
+            toast.success("Task deleted successfully!");
+          })
+          .catch(error => {
+            console.error("Error deleting task:", error);
+            toast.error("Failed to delete task");
+          });
+      }
     }
   };
 
   // Get current project's tasks
-  const filteredTasks = tasks.filter(task => task.projectId === activeProject);
+  const filteredTasks = tasks.filter(task => task.project_id === activeProject);
   const completedTasks = tasks.filter(task => task.status === 'completed');
 
   // Get icons
@@ -85,7 +161,7 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center h-screen">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
@@ -109,17 +185,17 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
             <ul className="space-y-2">
               {projects.map(project => (
                 <motion.li 
-                  key={project.id}
+                  key={project.Id}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <button
                     className={`w-full text-left py-2 px-3 rounded-lg flex items-center justify-between ${
-                      activeProject === project.id 
+                      activeProject === project.Id 
                         ? 'bg-primary text-white' 
                         : 'bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700'
                     } transition-colors`}
-                    onClick={() => setActiveProject(project.id)}
+                    onClick={() => setActiveProject(project.Id)}
                   >
                     <div className="flex items-center">
                       <span 
@@ -184,11 +260,11 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
             </h3>
             <ul className="space-y-2">
               {users.map(user => (
-                <li key={user.id} className="flex items-center gap-2 p-2 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg">
+                <li key={user.Id} className="flex items-center gap-2 p-2 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg">
                   <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
-                    {user.name.charAt(0)}
+                    {user.Name.charAt(0)}
                   </div>
-                  <span>{user.name}</span>
+                  <span>{user.Name}</span>
                 </li>
               ))}
             </ul>
@@ -206,7 +282,7 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
             {/* Active Project Header */}
             <div className="mb-4">
               <h2 className="text-xl font-bold">
-                {projects.find(p => p.id === activeProject)?.name} Tasks
+                {projects.find(p => p.Id === activeProject)?.Name || 'All'} Tasks
               </h2>
               <p className="text-surface-500 dark:text-surface-400">
                 Manage your tasks for this project
@@ -215,7 +291,7 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
             
             {/* Task Creation */}
             <MainFeature 
-              onAddTask={handleAddTask} 
+              onTaskAdded={refreshTasks} 
               projectId={activeProject}
             />
           </div>
@@ -260,7 +336,7 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
                   }
                   
                   // Format due date
-                  const dueDate = new Date(task.dueDate);
+                  const dueDate = new Date(task.due_date);
                   const today = new Date();
                   const tomorrow = new Date(today);
                   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -276,7 +352,7 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
                   
                   return (
                     <motion.div 
-                      key={task.id}
+                      key={task.Id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="card p-4 hover:shadow-md transition-all"
@@ -285,7 +361,7 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
                         <div className="flex items-start gap-3">
                           <button 
                             onClick={() => handleUpdateTaskStatus(
-                              task.id, 
+                              task.Id, 
                               task.status === 'completed' ? 'not-started' : 'completed'
                             )}
                             className={`mt-1 p-1 rounded-full ${
@@ -301,7 +377,7 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
                             <h3 className={`font-medium ${
                               task.status === 'completed' ? 'line-through text-surface-400' : ''
                             }`}>
-                              {task.title}
+                              {task.title || task.Name}
                             </h3>
                             
                             <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
@@ -343,7 +419,7 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
                         <div className="flex gap-1">
                           <button 
                             className="p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-                            onClick={() => handleDeleteTask(task.id)}
+                            onClick={() => handleDeleteTask(task.Id)}
                           >
                             {(() => {
                               const TrashIcon = getIcon('trash-2');

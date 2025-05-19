@@ -1,20 +1,45 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import ReportingDashboard from '../components/ReportingDashboard';
+import { getTasks } from '../services/TaskService';
+import { getProjects } from '../services/ProjectService';
+import { getUsers } from '../services/UserService';
 
-function Reports({ tasks, projects, users }) {
+function Reports() {
   const [isLoading, setIsLoading] = useState(true);
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [users, setUsers] = useState([]);
   const navigate = useNavigate();
 
-  // Simulate loading data
+  // Load report data
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch all required data in parallel
+        const [tasksData, projectsData, usersData] = await Promise.all([
+          getTasks(),
+          getProjects(),
+          getUsers()
+        ]);
+        
+        setTasks(tasksData);
+        setProjects(projectsData);
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Error fetching report data:", error);
+        toast.error("Failed to load report data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    return () => clearTimeout(timer);
+    fetchData();
   }, []);
 
   const ChartIcon = getIcon('bar-chart-2');
@@ -27,8 +52,10 @@ function Reports({ tasks, projects, users }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+      <div className="flex items-center justify-center h-screen">
+        <motion.div 
+          animate={{ rotate: 360 }} 
+          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
           <RefreshCwIcon className="w-12 h-12 text-primary" />
         </motion.div>
       </div>

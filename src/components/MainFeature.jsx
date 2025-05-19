@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import TimeTracker from './TimeTracker';
+import { createTask } from '../services/TaskService';
 
-const MainFeature = () => {
+const MainFeature = ({ projectId, onTaskAdded }) => {
   const defaultFormData = {
     title: '',
     description: '',
@@ -18,6 +20,7 @@ const MainFeature = () => {
   const [formData, setFormData] = useState(defaultFormData);
   const [validationErrors, setValidationErrors] = useState({});
   const [showTimeTracker, setShowTimeTracker] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get icons
   const PlusIcon = getIcon('plus');
@@ -70,21 +73,52 @@ const MainFeature = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      // Include the current time tracking data in the task
-      console.log("Task created:", formData); // Replace with actual task creation logic
-    
-      // Reset form data
-      setFormData(defaultFormData);
-    
-      // Reset errors
-      setValidationErrors({
-        title: ''
-      });
-      setIsFormOpen(false);
+      setIsSubmitting(true);
+      
+      try {
+        if (!projectId) {
+          toast.error("Please select a project first");
+          return;
+        }
+        
+        // Prepare task data for API
+        const taskData = {
+          title: formData.title,
+          description: formData.description,
+          status: formData.status,
+          priority: formData.priority,
+          dueDate: formData.dueDate, // API expects a date string
+          timeSpent: formData.timeSpent,
+          projectId: projectId // Use the selected project ID
+        };
+        
+        // Create the task in the database
+        await createTask(taskData);
+        
+        // Show success message
+        toast.success("Task created successfully!");
+        
+        // Reset form data
+        setFormData(defaultFormData);
+        
+        // Reset errors
+        setValidationErrors({});
+        
+        // Close the form
+        setIsFormOpen(false);
+        
+        // Refresh the task list in the parent component
+        if (onTaskAdded) onTaskAdded();
+      } catch (error) {
+        console.error("Error creating task:", error);
+        toast.error("Failed to create task");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -281,12 +315,18 @@ const MainFeature = () => {
                   
                   <motion.button
                     type="submit"
-                    className="btn-primary flex items-center gap-2"
+                    className={`btn-primary flex items-center gap-2 ${
+                      isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    disabled={isSubmitting}
                   >
-                    <CheckIcon className="w-4 h-4" />
-                    Create Task
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2"><RefreshCwIcon className="w-4 h-4 animate-spin" /> Creating...</span>
+                    ) : (
+                      <span className="flex items-center gap-2"><CheckIcon className="w-4 h-4" /> Create Task</span>
+                    )}
                   </motion.button>
                 </div>
               </div>
