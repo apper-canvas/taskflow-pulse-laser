@@ -77,7 +77,7 @@ function App() {
           if (user) {
             // User is authenticated
             if (redirectPath) {
-              navigate(currentPath);
+              navigate(redirectPath);
             } else if (!isAuthPage) {
               if (!currentPath.includes('/login') && !currentPath.includes('/signup')) {
                 navigate(currentPath);
