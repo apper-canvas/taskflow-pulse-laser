@@ -35,6 +35,7 @@ const NotFound = () => {
           <Link to="/login" className="text-primary hover:underline">Go to login page</Link>
         </div>
       </motion.div>
+    </div>
   );
 }
 
