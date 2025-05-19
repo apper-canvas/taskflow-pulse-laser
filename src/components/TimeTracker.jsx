@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import { startTimeTracking, stopTimeTracking } from '../services/TimeTrackerService';
 
-function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
+function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false, taskId = null, taskName = '' }) {
   const [time, setTime] = useState(initialTime);
   const [timerRunning, setTimerRunning] = useState(isRunning);
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +16,26 @@ function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
   const PlayIcon = getIcon('play');
   const PauseIcon = getIcon('pause');
   const ClockIcon = getIcon('clock');
+  const RefreshCwIcon = getIcon('refresh-cw');
+  
+  // Format time in HH:MM:SS
+  const formatTime = (milliseconds) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return [
+      hours.toString().padStart(2, '0'),
+      minutes.toString().padStart(2, '0'),
+      seconds.toString().padStart(2, '0')
+    ].join(':');
+  };
+  
+  // Array to store time updates
+  useEffect(() => {
+    setTimerRunning(isRunning);
+  }, [isRunning]);
   const RefreshIcon = getIcon('refresh-cw');
 
   useEffect(() => {
@@ -25,11 +45,23 @@ function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
         const elapsedTime = Date.now() - startTimeRef.current;
         setTime(elapsedTime);
         onTimeUpdate && onTimeUpdate(elapsedTime);
+      }, 1000);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [timerRunning, onTimeUpdate]);
+
   const toggleTimer = async () => {
     try {
       setIsLoading(true);
       
-      if (isRunning) {
+      if (timerRunning) {
         // Stop the timer in the UI
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -67,7 +99,7 @@ function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
       }
       
       // Toggle the running state
-      setIsRunning(!isRunning);
+      setTimerRunning(!timerRunning);
     } catch (error) {
       console.error("Error toggling timer:", error);
       toast.error("Failed to update timer");
@@ -75,23 +107,13 @@ function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
       // Reset timer state if there was an error
       clearInterval(timerRef.current);
       timerRef.current = null;
-      setIsRunning(false);
+      setTimerRunning(false);
     } finally {
       setIsLoading(false);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-    return [
-      hours.toString().padStart(2, '0'),
-      minutes.toString().padStart(2, '0'),
-      seconds.toString().padStart(2, '0')
-    ].join(':');
+    }
   };
-
-  const toggleTimer = () => {
-    setTimerRunning(!timerRunning);
-  };
-
-  const resetTimer = () => {
+  
+  const resetTimer = async () => {
     setTimerRunning(false);
     setTime(0);
     onTimeUpdate && onTimeUpdate(0);
@@ -116,6 +138,7 @@ function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
         <div className="flex items-center gap-2">
           <motion.button
             onClick={toggleTimer}
+            disabled={isLoading}
             className={`timer-button ${
               timerRunning 
                 ? 'bg-orange-100 text-orange-800 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-200 dark:hover:bg-orange-900/40' 
@@ -123,19 +146,13 @@ function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
             }`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-          whileHover={{ scale: isLoading ? 1.0 : 1.05 }}
           >
-          disabled={isLoading}
-            {timerRunning ? (
-          {isLoading ? (
-            <><RefreshCwIcon className="w-4 h-4 animate-spin" /> Loading...</>
-                <span>Pause</span>
-            isRunning ? <><PauseIcon className="w-4 h-4" /> Stop</> : <><PlayIcon className="w-4 h-4" /> Start</>
+            {isLoading ? (
+              <><RefreshCwIcon className="w-4 h-4 animate-spin" /> Loading...</>
+            ) : timerRunning ? (
+              <><PauseIcon className="w-4 h-4" /> Stop</>
             ) : (
-              <>
-                <PlayIcon className="w-4 h-4" />
-                <span>Start</span>
-              </>
+              <><PlayIcon className="w-4 h-4" /> Start</>
             )}
           </motion.button>
           
@@ -144,7 +161,6 @@ function TimeTracker({ onTimeUpdate, initialTime = 0, isRunning = false }) {
             className="timer-button bg-surface-100 text-surface-700 hover:bg-surface-200 dark:bg-surface-700 dark:text-surface-300 dark:hover:bg-surface-600"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            type="button"
             disabled={time === 0}
           >
             <RefreshIcon className="w-4 h-4" />
