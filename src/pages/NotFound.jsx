@@ -1,8 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getIcon } from '../utils/iconUtils';
-import { useContext } from 'react';
-import { AuthContext } from '../App';
 
 const NotFound = () => {
   const AlertTriangleIcon = getIcon('alert-triangle');
@@ -36,6 +34,7 @@ const NotFound = () => {
         <div className="mt-6">
           <Link to="/login" className="text-primary hover:underline">Go to login page</Link>
         </div>
+      </motion.div>
   );
 }
 
