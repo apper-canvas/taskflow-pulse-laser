@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import MainFeature from '../components/MainFeature';
@@ -94,7 +95,7 @@ function Home({ tasks, setTasks, projects, users }) {
         </motion.div>
       </div>
     );
-  }
+              <Link to="/reports" className="block p-4 bg-white dark:bg-surface-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer">
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -103,7 +104,7 @@ function Home({ tasks, setTasks, projects, users }) {
         <div className="w-full md:w-64 lg:w-72">
           <div className="card mb-4">
             <h2 className="text-xl font-bold mb-4 flex items-center">
-              <FolderIcon className="w-5 h-5 mr-2 text-primary" />
+              </Link>
               Projects
             </h2>
             
