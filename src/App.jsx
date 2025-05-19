@@ -46,96 +46,90 @@ function App() {
   useEffect(() => {
     let initTimeoutId;
     
+    // Initialize ApperUI but don't show login yet
     try {
       const { ApperClient, ApperUI } = window.ApperSDK;
+      
+      // Set a timeout to prevent infinite loading
+      initTimeoutId = setTimeout(() => {
+        console.log("SDK initialization timeout reached, proceeding with application");
+        setIsInitialized(true);
+      }, 10000); // 10 seconds timeout
+      
       const client = new ApperClient({
         apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
         apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
       });
-
-      // Set a timeout to prevent infinite loading
-      initTimeoutId = setTimeout(() => {
-        console.log("Initialization timeout reached, proceeding with application");
-        setIsInitialized(true);
-      }, 5000); // 5 seconds timeout
       
-    } catch (error) {
-      setInitializationError("Failed to initialize ApperSDK: " + error.message);
-      setIsInitialized(true); // Continue to render the app even with error
-      return;
-    }
-
-    // Initialize ApperUI but don't show login yet
-    const { ApperClient, ApperUI } = window.ApperSDK;
-    const client = new ApperClient({
-      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
-      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
-    });
-    
-    ApperUI.setup(client, {
-      target: '#authentication',
-      clientId: import.meta.env.VITE_APPER_PROJECT_ID,
-      view: 'both',
-      onSuccess: function (user) {
-        clearTimeout(initTimeoutId); // Clear the timeout
-        setIsInitialized(true);
-        // CRITICAL: This exact currentPath logic must be preserved in all implementations
-        // DO NOT simplify or modify this pattern as it ensures proper redirection flow
-        let currentPath = window.location.pathname + window.location.search;
-        let redirectPath = new URLSearchParams(window.location.search).get('redirect');
-        const isAuthPage = currentPath.includes('/login') || currentPath.includes('/signup') || currentPath.includes(
-            '/callback') || currentPath.includes('/error');
-        if (user) {
-          // User is authenticated
-          if (redirectPath) {
-            navigate(redirectPath);
-          } else if (!isAuthPage) {
-            if (!currentPath.includes('/login') && !currentPath.includes('/signup')) {
+      ApperUI.setup(client, {
+        target: '#authentication',
+        clientId: import.meta.env.VITE_APPER_PROJECT_ID,
+        view: 'both',
+        onSuccess: function (user) {
+          clearTimeout(initTimeoutId); // Clear the timeout
+          setIsInitialized(true); // Set initialization complete
+          // CRITICAL: This exact currentPath logic must be preserved in all implementations
+          // DO NOT simplify or modify this pattern as it ensures proper redirection flow
+          let currentPath = window.location.pathname + window.location.search;
+          let redirectPath = new URLSearchParams(window.location.search).get('redirect');
+          const isAuthPage = currentPath.includes('/login') || currentPath.includes('/signup') || currentPath.includes(
+              '/callback') || currentPath.includes('/error');
+          if (user) {
+            // User is authenticated
+            if (redirectPath) {
               navigate(currentPath);
+            } else if (!isAuthPage) {
+              if (!currentPath.includes('/login') && !currentPath.includes('/signup')) {
+                navigate(currentPath);
+              } else {
+                navigate('/');
+              }
             } else {
               navigate('/');
             }
+            // Store user information in Redux
+            dispatch(setUser(JSON.parse(JSON.stringify(user))));
           } else {
-            navigate('/');
-          }
-          // Store user information in Redux
-          dispatch(setUser(JSON.parse(JSON.stringify(user))));
-        } else {
-          // User is not authenticated
-          if (!isAuthPage) {
-            navigate(
-              currentPath.includes('/signup')
-               ? `/signup?redirect=${currentPath}`
-               : currentPath.includes('/login')
-               ? `/login?redirect=${currentPath}`
-               : '/login');
-          } else if (redirectPath) {
-            if (
-              ![
-                'error',
-                'signup',
-                'login',
-                'callback'
-              ].some((path) => currentPath.includes(path)))
-              navigate(`/login?redirect=${redirectPath}`);
-            else {
+            // User is not authenticated
+            if (!isAuthPage) {
+              navigate(
+                currentPath.includes('/signup')
+                 ? `/signup?redirect=${currentPath}`
+                 : currentPath.includes('/login')
+                 ? `/login?redirect=${currentPath}`
+                 : '/login');
+            } else if (redirectPath) {
+              if (
+                ![
+                  'error',
+                  'signup',
+                  'login',
+                  'callback'
+                ].some((path) => currentPath.includes(path)))
+                navigate(`/login?redirect=${redirectPath}`);
+              else {
+                navigate(currentPath);
+              }
+            } else if (isAuthPage) {
               navigate(currentPath);
+            } else {
+              navigate('/login');
             }
-          } else if (isAuthPage) {
-            navigate(currentPath);
-          } else {
-            navigate('/login');
+            dispatch(clearUser());
           }
-          dispatch(clearUser());
+        },
+        onError: function(error) {
+          clearTimeout(initTimeoutId); // Clear the timeout
+          console.error("Authentication failed:", error);
+          setInitializationError("Authentication failed: " + (error.message || "Unknown error"));
+          setIsInitialized(true); // Continue to render the app even with error
         }
-      },
-      onError: function(error) {
-        clearTimeout(initTimeoutId); // Clear the timeout
-        console.error("Authentication failed:", error);
-        setInitializationError("Authentication failed: " + error.message);
-        setIsInitialized(true);
-      }
-    });
+      });
+    } catch (error) {
+      console.error("Failed to initialize ApperSDK:", error);
+      setInitializationError("Failed to initialize ApperSDK: " + (error.message || "Unknown error"));
+      setIsInitialized(true); // Continue to render the app even with error
+    }
     
     // Clean up the timeout if component unmounts
     return () => {
@@ -157,6 +151,7 @@ function App() {
     isInitialized,
     isAuthenticated,
     logout: async () => {
+      dispatch(clearUser()); // Clear user state immediately for better UX
       try {
         const { ApperUI } = window.ApperSDK;
         await ApperUI.logout();
@@ -164,6 +159,7 @@ function App() {
         navigate('/login');
       } catch (error) {
         console.error("Logout failed:", error);
+        navigate('/login'); // Redirect to login even on error
       }
     }
   };
@@ -242,4 +238,3 @@ function App() {
 }
 
 export default App;
-
