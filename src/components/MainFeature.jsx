@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getIcon } from '../utils/iconUtils';
 import TimeTracker from './TimeTracker';
+import TimeTracker from './TimeTracker';
 
-function MainFeature({ onAddTask, projectId }) {
+  const defaultFormData = {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -12,6 +13,9 @@ function MainFeature({ onAddTask, projectId }) {
     priority: 'medium',
     dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
     timeSpent: 0,
+  };
+  
+  const [formData, setFormData] = useState(defaultFormData);
     timerRunning: false
   });
   const [validationErrors, setValidationErrors] = useState({});
@@ -74,17 +78,14 @@ function MainFeature({ onAddTask, projectId }) {
     if (validateForm()) {
       // Include the current time tracking data in the task
       onAddTask({...formData});
-      
-      // Reset form and close it
-      setFormData({
-        title: '',
-        description: '',
-        status: 'not-started',
-        dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
-        timeSpent: 0,
-        timerRunning: false
-      });
-      setShowTimeTracker(false);
+    
+    // Reset form data
+    setFormData(defaultFormData);
+    
+    // Reset errors
+    setErrors({
+      title: ''
+    });
       setIsFormOpen(false);
   };
   }
@@ -137,6 +138,13 @@ function MainFeature({ onAddTask, projectId }) {
                     type="text"
                     id="title"
                     name="title"
+          {/* Time tracking */}
+          <div className="mt-4">
+            <TimeTracker 
+              onTimeUpdate={handleTimeUpdate}
+              initialTime={formData.timeSpent}
+            />
+          </div>
                     value={formData.title}
                     onChange={handleInputChange}
                     placeholder="What needs to be done?"
@@ -159,8 +167,6 @@ function MainFeature({ onAddTask, projectId }) {
                   <textarea
                     id="description"
                     name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
                     placeholder="Add details about this task..."
                     rows="3"
                     className="w-full"

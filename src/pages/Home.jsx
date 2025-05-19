@@ -4,66 +4,9 @@ import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import MainFeature from '../components/MainFeature';
 
-function Home() {
-  const [projects, setProjects] = useState([
-    { id: 'p1', name: 'Personal', color: '#4f46e5', taskCount: 5 },
-    { id: 'p2', name: 'Work', color: '#10b981', taskCount: 3 },
-    { id: 'p3', name: 'Study', color: '#f97316', taskCount: 2 }
-  ]);
-  
+function Home({ tasks, setTasks, projects, users }) {
   const [activeProject, setActiveProject] = useState('p1');
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Sample tasks data - would normally come from a backend
-  const [tasks, setTasks] = useState([
-    {
-      id: 't1',
-      title: 'Complete React project',
-      description: 'Finish the TaskFlow MVP implementation',
-      status: 'in-progress',
-      priority: 'high',
-      dueDate: new Date(Date.now() + 86400000 * 2).toISOString(), // 2 days from now
-      projectId: 'p1'
-    },
-    {
-      id: 't2',
-      title: 'Buy groceries',
-      description: 'Milk, eggs, bread, and vegetables',
-      status: 'not-started',
-      priority: 'medium',
-      dueDate: new Date(Date.now() + 86400000).toISOString(), // 1 day from now
-      projectId: 'p1'
-    },
-    {
-      id: 't3',
-      title: 'Plan weekend trip',
-      description: 'Research destinations and accommodation',
-      status: 'not-started',
-      priority: 'low',
-      dueDate: new Date(Date.now() + 86400000 * 5).toISOString(), // 5 days from now
-      projectId: 'p1'
-    },
-    {
-      id: 't4',
-      title: 'Prepare presentation',
-      description: 'Create slides for the client meeting',
-      status: 'in-progress',
-      priority: 'urgent',
-      dueDate: new Date(Date.now() + 86400000 * 1).toISOString(), // 1 day from now
-      projectId: 'p2'
-    },
-    {
-      id: 't5',
-      title: 'Update portfolio',
-      description: 'Add recent projects to personal website',
-      status: 'not-started',
-      priority: 'medium',
-      dueDate: new Date(Date.now() + 86400000 * 7).toISOString(), // 7 days from now
-      projectId: 'p2'
-    }
-  ]);
-
-  // Simulate loading data
+  const [isLoading, setIsLoading] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -78,6 +21,8 @@ function Home() {
       id: `t${Date.now()}`,
       ...task,
       projectId: activeProject,
+      assignedTo: 'u1', // Default assignment
+      timeSpent: 0
     };
     
     setTasks([...tasks, newTask]);
@@ -123,6 +68,7 @@ function Home() {
 
   // Get current project's tasks
   const filteredTasks = tasks.filter(task => task.projectId === activeProject);
+  const completedTasks = tasks.filter(task => task.status === 'completed');
 
   // Get icons
   const CheckCircleIcon = getIcon('check-circle');
@@ -131,6 +77,9 @@ function Home() {
   const PlusCircleIcon = getIcon('plus-circle');
   const RefreshCwIcon = getIcon('refresh-cw');
   const ListTodoIcon = getIcon('list-todo');
+  const BarChart2Icon = getIcon('bar-chart-2');
+  const ArrowRightIcon = getIcon('arrow-right');
+  const UserIcon = getIcon('user');
   const FolderIcon = getIcon('folder');
 
   if (isLoading) {
@@ -151,7 +100,7 @@ function Home() {
       <div className="flex flex-col md:flex-row gap-6">
         {/* Left Sidebar - Projects */}
         <div className="w-full md:w-64 lg:w-72">
-          <div className="card mb-6">
+          <div className="card mb-4">
             <h2 className="text-xl font-bold mb-4 flex items-center">
               <FolderIcon className="w-5 h-5 mr-2 text-primary" />
               Projects
@@ -192,9 +141,25 @@ function Home() {
               <span>New Project</span>
             </button>
           </div>
+
+          {/* Navigation Links */}
+          <div className="card mb-4">
+            <h3 className="text-lg font-bold mb-3">Navigation</h3>
+            <ul className="space-y-2">
+              <li className="hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg">
+                <a href="/" className="block px-3 py-2 text-surface-800 dark:text-surface-200">Dashboard</a>
+              </li>
+              <li className="bg-primary text-white rounded-lg">
+                <a href="/reports" className="block px-3 py-2 flex items-center justify-between">
+                  <span className="flex items-center"><BarChart2Icon className="w-4 h-4 mr-2" /> Reports</span>
+                  <ArrowRightIcon className="w-4 h-4" />
+                </a>
+              </li>
+            </ul>
+          </div>
           
           {/* Quick Stats */}
-          <div className="card">
+          <div className="card mb-4">
             <h3 className="text-lg font-bold mb-3">Quick Stats</h3>
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-surface-100 dark:bg-surface-800 p-3 rounded-lg">
@@ -204,9 +169,27 @@ function Home() {
               <div className="bg-surface-100 dark:bg-surface-800 p-3 rounded-lg">
                 <p className="text-xs text-surface-500 dark:text-surface-400">Completed</p>
                 <p className="text-2xl font-bold">
-                  {tasks.filter(task => task.status === 'completed').length}
+                  {completedTasks.length}
                 </p>
               </div>
+            </div>
+          </div>
+          
+          {/* Assigned Users */}
+          <div className="card">
+            <h3 className="text-lg font-bold mb-3 flex items-center">
+              <UserIcon className="w-4 h-4 mr-2" /> Team Members
+            </h3>
+            <ul className="space-y-2">
+              {users.map(user => (
+                <li key={user.id} className="flex items-center gap-2 p-2 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
+                    {user.name.charAt(0)}
+                  </div>
+                  <span>{user.name}</span>
+                </li>
+              ))}
+            </ul>
             </div>
           </div>
         </div>

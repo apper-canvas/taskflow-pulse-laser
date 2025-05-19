@@ -5,12 +5,50 @@ import { ToastContainer } from 'react-toastify';
 import { getIcon } from './utils/iconUtils';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
+import Reports from './pages/Reports';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem('darkMode') === 'true' || 
     window.matchMedia('(prefers-color-scheme: dark)').matches
   );
+
+  // Sample tasks data
+  const [tasks, setTasks] = useState([
+    {
+      id: 't1',
+      title: 'Complete React project',
+      description: 'Finish the TaskFlow MVP implementation',
+      status: 'in-progress',
+      priority: 'high',
+      dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
+      projectId: 'p1',
+      assignedTo: 'u1',
+      timeSpent: 4500
+    },
+    {
+      id: 't2',
+      title: 'Buy groceries',
+      description: 'Milk, eggs, bread, and vegetables',
+      status: 'not-started',
+      priority: 'medium',
+      dueDate: new Date(Date.now() + 86400000).toISOString(),
+      projectId: 'p1',
+      assignedTo: 'u1',
+      timeSpent: 0
+    },
+    {
+      id: 't3',
+      title: 'Plan weekend trip',
+      description: 'Research destinations and accommodation',
+      status: 'completed',
+      priority: 'low',
+      dueDate: new Date(Date.now() + 86400000 * 5).toISOString(),
+      projectId: 'p2',
+      assignedTo: 'u2',
+      timeSpent: 7200
+    }
+  ]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -28,6 +66,20 @@ function App() {
   // Get the appropriate icons based on mode
   const MoonIcon = getIcon('moon');
   const SunIcon = getIcon('sun');
+  
+  // Sample projects data
+  const projects = [
+    { id: 'p1', name: 'Personal', color: '#4f46e5', taskCount: 5 },
+    { id: 'p2', name: 'Work', color: '#10b981', taskCount: 3 },
+    { id: 'p3', name: 'Study', color: '#f97316', taskCount: 2 }
+  ];
+  
+  // Sample users data
+  const users = [
+    { id: 'u1', name: 'John Doe', email: 'john@example.com' },
+    { id: 'u2', name: 'Jane Smith', email: 'jane@example.com' },
+    { id: 'u3', name: 'Alex Johnson', email: 'alex@example.com' }
+  ];
 
   return (
     <div className="flex min-h-screen bg-surface-50 dark:bg-surface-900 transition-colors duration-300">
@@ -46,8 +98,9 @@ function App() {
       <div className="flex-1 flex flex-col">
         <main className="flex-1">
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/" element={<Home tasks={tasks} setTasks={setTasks} projects={projects} users={users} />} />
+            <Route path="/reports" element={<Reports tasks={tasks} projects={projects} users={users} />} />
+            <Route path="*" element={<NotFound tasks={tasks} />} />
           </Routes>
         </main>
       </div>
