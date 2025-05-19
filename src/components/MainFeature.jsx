@@ -16,9 +16,6 @@ const MainFeature = () => {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState(defaultFormData);
-  const [validationErrors, setValidationErrors] = useState({
-    title: ''
-  });
   const [validationErrors, setValidationErrors] = useState({});
   const [showTimeTracker, setShowTimeTracker] = useState(false);
 
@@ -88,8 +85,8 @@ const MainFeature = () => {
         title: ''
       });
       setIsFormOpen(false);
+    }
   };
-  }
 
   const handleTimeUpdate = (newTime) => {
     setFormData({...formData, timeSpent: newTime});
