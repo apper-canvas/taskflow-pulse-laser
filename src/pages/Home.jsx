@@ -191,7 +191,6 @@ function Home({ tasks, setTasks, projects, users }) {
               ))}
             </ul>
             </div>
-          </div>
         </div>
         
         {/* Main Content Area */}
