@@ -83,7 +83,6 @@ function MainFeature({ onAddTask, projectId }) {
         dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
         timeSpent: 0,
         timerRunning: false
-        dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0] // Tomorrow
       });
       setShowTimeTracker(false);
       setIsFormOpen(false);
@@ -91,7 +90,6 @@ function MainFeature({ onAddTask, projectId }) {
 
   const handleTimeUpdate = (newTime) => {
     setFormData({...formData, timeSpent: newTime});
-    }
   };
 
   return (
