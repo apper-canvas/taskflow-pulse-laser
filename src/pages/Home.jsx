@@ -146,11 +146,6 @@ function Home({ tasks, setTasks, projects, setProjects, users }) {
           <div className="card mb-4">
             <h3 className="text-lg font-bold mb-3">Navigation</h3>
             {/* Reports Quick Access */}
-            <div className="mb-3">
-              <Link to="/reports" className="block p-4 bg-white dark:bg-surface-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                <span className="flex items-center"><BarChart2Icon className="w-4 h-4 mr-2" /> Reports Dashboard</span>
-              </Link>
-            </div>
             
             <ul className="space-y-2">
               <li className="hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg">
