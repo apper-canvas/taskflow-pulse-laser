@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getIcon } from '../utils/iconUtils';
+import TimeTracker from './TimeTracker';
 
 function MainFeature({ onAddTask, projectId }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -9,9 +10,12 @@ function MainFeature({ onAddTask, projectId }) {
     description: '',
     status: 'not-started',
     priority: 'medium',
-    dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0] // Tomorrow
+    dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
+    timeSpent: 0,
+    timerRunning: false
   });
   const [validationErrors, setValidationErrors] = useState({});
+  const [showTimeTracker, setShowTimeTracker] = useState(false);
 
   // Get icons
   const PlusIcon = getIcon('plus');
@@ -20,6 +24,8 @@ function MainFeature({ onAddTask, projectId }) {
   const AlertCircleIcon = getIcon('alert-circle');
   const CheckIcon = getIcon('check');
   const InfoIcon = getIcon('info');
+  const TimerIcon = getIcon('timer');
+  const ClockIcon = getIcon('clock');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -66,17 +72,25 @@ function MainFeature({ onAddTask, projectId }) {
     e.preventDefault();
     
     if (validateForm()) {
-      onAddTask(formData);
+      // Include the current time tracking data in the task
+      onAddTask({...formData});
       
       // Reset form and close it
       setFormData({
         title: '',
         description: '',
         status: 'not-started',
-        priority: 'medium',
+        dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
+        timeSpent: 0,
+        timerRunning: false
         dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0] // Tomorrow
       });
+      setShowTimeTracker(false);
       setIsFormOpen(false);
+  };
+
+  const handleTimeUpdate = (newTime) => {
+    setFormData({...formData, timeSpent: newTime});
     }
   };
 
@@ -212,6 +226,42 @@ function MainFeature({ onAddTask, projectId }) {
                       <AlertCircleIcon className="w-4 h-4" />
                       {validationErrors.dueDate}
                     </p>
+                  )}
+                </div>
+                
+                <div className="mt-4 border-t pt-4 border-surface-200 dark:border-surface-700">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2">
+                      <ClockIcon className="w-5 h-5 text-primary" />
+                      <h4 className="font-medium text-sm sm:text-base">Time Tracking</h4>
+                    </div>
+                    
+                    {!showTimeTracker ? (
+                      <motion.button
+                        type="button"
+                        onClick={() => setShowTimeTracker(true)}
+                        className="btn-outline flex items-center gap-1 text-sm py-1 px-2"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <TimerIcon className="w-4 h-4" />
+                        <span>Show Timer</span>
+                      </motion.button>
+                    ) : null}
+                  </div>
+                  
+                  {showTimeTracker && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-3"
+                    >
+                      <TimeTracker 
+                        onTimeUpdate={handleTimeUpdate}
+                        initialTime={formData.timeSpent} 
+                      />
+                    </motion.div>
                   )}
                 </div>
                 
