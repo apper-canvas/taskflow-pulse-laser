@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import MainFeature from '../components/MainFeature';
@@ -150,10 +151,10 @@ function Home({ tasks, setTasks, projects, users }) {
                 <a href="/" className="block px-3 py-2 text-surface-800 dark:text-surface-200">Dashboard</a>
               </li>
               <li className="bg-primary text-white rounded-lg">
-                <a href="/reports" className="block px-3 py-2 flex items-center justify-between">
+                <Link to="/reports" className="block px-3 py-2 flex items-center justify-between">
                   <span className="flex items-center"><BarChart2Icon className="w-4 h-4 mr-2" /> Reports</span>
                   <ArrowRightIcon className="w-4 h-4" />
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
