@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { getIcon } from '../utils/iconUtils';
 import ReportingDashboard from '../components/ReportingDashboard';
 
 function Reports({ tasks, projects, users }) {
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Simulate loading data
   useEffect(() => {
@@ -17,6 +19,11 @@ function Reports({ tasks, projects, users }) {
 
   const ChartIcon = getIcon('bar-chart-2');
   const RefreshCwIcon = getIcon('refresh-cw');
+  const ArrowLeftIcon = getIcon('arrow-left');
+  
+  const handleBack = () => {
+    navigate(-1);
+  };
 
   if (isLoading) {
     return (
@@ -30,6 +37,16 @@ function Reports({ tasks, projects, users }) {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <motion.button
+        onClick={handleBack}
+        className="mb-4 flex items-center text-surface-600 hover:text-primary dark:text-surface-400 dark:hover:text-primary-light"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label="Go back"
+      >
+        <ArrowLeftIcon className="w-5 h-5 mr-1" />
+        <span>Back</span>
+      </motion.button>
       <h1 className="text-2xl font-bold mb-2 flex items-center">
         <ChartIcon className="w-6 h-6 mr-2 text-primary" /> Task Analytics Dashboard
       </h1>
