@@ -377,7 +377,6 @@ function Home() {
               <span>New Project</span>
             </button>
             
-            </button>
           </div>
 
           {/* Navigation Links */}
